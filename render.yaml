@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: go-line-accounting-bot
+    env: go
+    plan: free
+    buildCommand: "go build -o app ."
+    startCommand: "./app"
