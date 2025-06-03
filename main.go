@@ -9,35 +9,48 @@ import (
 )
 
 func main() {
-	bot, err := linebot.New(
-		os.Getenv("LINE_CHANNEL_SECRET"),
-		os.Getenv("LINE_CHANNEL_ACCESS_TOKEN"),
-	)
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	http.HandleFunc("/callback", func(w http.ResponseWriter, req *http.Request) {
+		bot, err := linebot.New(
+			os.Getenv("LINE_CHANNEL_SECRET"),
+			os.Getenv("LINE_CHANNEL_ACCESS_TOKEN"),
+		)
+		if err != nil {
+			log.Println("LINE bot init error:", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
 		events, err := bot.ParseRequest(req)
 		if err != nil {
 			if err == linebot.ErrInvalidSignature {
-				w.WriteHeader(400)
+				log.Println("Invalid signature")
+				w.WriteHeader(http.StatusBadRequest)
 			} else {
-				w.WriteHeader(500)
+				log.Println("ParseRequest error:", err)
+				w.WriteHeader(http.StatusInternalServerError)
 			}
+			return
+		}
+
+		// 關鍵：LINE 驗證 webhook 時，會送空 events 陣列
+		if len(events) == 0 {
+			log.Println("Webhook verification ping received. Returning 200.")
+			w.WriteHeader(http.StatusOK)
 			return
 		}
 
 		for _, event := range events {
 			if event.Type == linebot.EventTypeMessage {
 				if message, ok := event.Message.(*linebot.TextMessage); ok {
-					// 在這裡處理使用者的訊息，例如記帳功能
-					if _, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage("收到: "+message.Text)).Do(); err != nil {
-						log.Print(err)
+					reply := "收到指令：" + message.Text
+					if _, err := bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(reply)).Do(); err != nil {
+						log.Println("ReplyMessage error:", err)
 					}
 				}
 			}
 		}
+
+		w.WriteHeader(http.StatusOK) // 一定要回 200
 	})
 
 	log.Println("Server started at :8080")
