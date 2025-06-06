@@ -1,4 +1,4 @@
-package models
+package model
 
 import (
 	"accountingbot/db"
@@ -13,81 +13,81 @@ type Category struct {
 	Type   string `json:"type"`
 }
 
-// AddCategory 新增類別
+// AddCategory adds a new category
 func AddCategory(ctx context.Context, userID, name, typeName string) error {
 	ctx, span := logger.StartSpan(ctx, "models.AddCategory")
 	defer span.End()
 
-	logger.Info(ctx, "新增類別", "user_id", userID, "name", name, "type", typeName)
+	logger.Info(ctx, "Add category", "user_id", userID, "name", name, "type", typeName)
 
 	_, err := db.ExecContext(ctx, `
         INSERT INTO categories (user_id, name, type) VALUES ($1, $2, $3)
     `, userID, name, typeName)
 
 	if err != nil {
-		logger.Error(ctx, "新增類別失敗", "error", err.Error())
+		logger.Error(ctx, "Failed to add category", "error", err.Error())
 		return err
 	}
 
-	logger.Info(ctx, "類別新增成功", "name", name, "type", typeName)
+	logger.Info(ctx, "Category added successfully", "name", name, "type", typeName)
 	return nil
 }
 
-// UpdateCategory 修改類別
+// UpdateCategory updates a category
 func UpdateCategory(ctx context.Context, userID, oldName, newName string) (bool, error) {
 	ctx, span := logger.StartSpan(ctx, "models.UpdateCategory")
 	defer span.End()
 
-	logger.Info(ctx, "修改類別", "user_id", userID, "old_name", oldName, "new_name", newName)
+	logger.Info(ctx, "Update category", "user_id", userID, "old_name", oldName, "new_name", newName)
 
 	result, err := db.ExecContext(ctx, `
         UPDATE categories SET name = $1 WHERE user_id = $2 AND name = $3
     `, newName, userID, oldName)
 
 	if err != nil {
-		logger.Error(ctx, "修改類別失敗", "error", err.Error())
+		logger.Error(ctx, "Failed to update category", "error", err.Error())
 		return false, err
 	}
 
 	affected, _ := result.RowsAffected()
 	if affected == 0 {
-		logger.Warn(ctx, "找不到要修改的類別", "name", oldName)
+		logger.Warn(ctx, "Category to update not found", "name", oldName)
 		return false, nil
 	}
 
-	logger.Info(ctx, "類別修改成功", "old_name", oldName, "new_name", newName)
+	logger.Info(ctx, "Category updated successfully", "old_name", oldName, "new_name", newName)
 	return true, nil
 }
 
-// DeleteCategory 刪除類別
+// DeleteCategory deletes a category
 func DeleteCategory(ctx context.Context, userID, name string) (bool, error) {
 	ctx, span := logger.StartSpan(ctx, "models.DeleteCategory")
 	defer span.End()
 
-	logger.Info(ctx, "刪除類別", "user_id", userID, "name", name)
+	logger.Info(ctx, "Delete category", "user_id", userID, "name", name)
 
 	result, err := db.ExecContext(ctx, `DELETE FROM categories WHERE user_id = $1 AND name = $2`, userID, name)
 	if err != nil {
-		logger.Error(ctx, "刪除類別失敗", "error", err.Error())
+		logger.Error(ctx, "Failed to delete category", "error", err.Error())
 		return false, err
 	}
 
 	affected, _ := result.RowsAffected()
 	if affected == 0 {
-		logger.Warn(ctx, "找不到要刪除的類別", "name", name)
+		logger.Warn(ctx, "Category to delete not found", "name", name)
 		return false, nil
 	}
 
-	logger.Info(ctx, "類別刪除成功", "name", name)
+	logger.Info(ctx, "Category deleted successfully", "name", name)
 	return true, nil
 }
 
-// CheckCategoryExists 檢查類別是否已存在
+// CheckCategoryExists checks if a category already exists
 func CheckCategoryExists(ctx context.Context, userID, name, typeName string) (bool, error) {
 	ctx, span := logger.StartSpan(ctx, "models.CheckCategoryExists")
 	defer span.End()
 
-	logger.Info(ctx, "檢查類別是否存在", "user_id", userID, "name", name, "type", typeName)
+	logger.Info(ctx, "Check if category exists", "user_id", userID, "name", name, "type", typeName)
 
 	var exists bool
 	err := db.QueryRowContext(ctx, `
@@ -97,25 +97,25 @@ func CheckCategoryExists(ctx context.Context, userID, name, typeName string) (bo
     `, userID, name, typeName).Scan(&exists)
 
 	if err != nil {
-		logger.Error(ctx, "檢查類別失敗", "error", err.Error())
+		logger.Error(ctx, "Failed to check category", "error", err.Error())
 		return false, err
 	}
 
 	return exists, nil
 }
 
-// GetCategoriesByType 按類型取得類別
+// GetCategoriesByType gets categories by type
 func GetCategoriesByType(ctx context.Context, userID string) (map[string][]string, error) {
 	ctx, span := logger.StartSpan(ctx, "models.GetCategoriesByType")
 	defer span.End()
 
-	logger.Info(ctx, "取得分類類別", "user_id", userID)
+	logger.Info(ctx, "Get categories by type", "user_id", userID)
 
 	rows, err := db.QueryContext(ctx, `
         SELECT type, name FROM categories WHERE user_id = $1 ORDER BY type, name
     `, userID)
 	if err != nil {
-		logger.Error(ctx, "查詢類別失敗", "error", err.Error())
+		logger.Error(ctx, "Failed to query categories", "error", err.Error())
 		return nil, err
 	}
 	defer rows.Close()
@@ -125,23 +125,23 @@ func GetCategoriesByType(ctx context.Context, userID string) (map[string][]strin
 	for rows.Next() {
 		var typeName, name string
 		if err := rows.Scan(&typeName, &name); err != nil {
-			logger.Error(ctx, "解析類別資料失敗", "error", err.Error())
+			logger.Error(ctx, "Failed to parse category data", "error", err.Error())
 			return nil, err
 		}
 
 		categoriesByType[typeName] = append(categoriesByType[typeName], name)
 	}
 
-	logger.Info(ctx, "取得類別完成", "types_count", len(categoriesByType))
+	logger.Info(ctx, "Categories fetched", "types_count", len(categoriesByType))
 	return categoriesByType, nil
 }
 
-// GetCategoryIdAndType 取得類別 ID 和類型
+// GetCategoryIdAndType gets the category ID and type
 func GetCategoryIdAndType(ctx context.Context, userID, name string) (int, string, error) {
 	ctx, span := logger.StartSpan(ctx, "models.GetCategoryIdAndType")
 	defer span.End()
 
-	logger.Info(ctx, "取得類別 ID 和類型", "user_id", userID, "name", name)
+	logger.Info(ctx, "Get category ID and type", "user_id", userID, "name", name)
 
 	var id int
 	var typeName string
@@ -151,26 +151,26 @@ func GetCategoryIdAndType(ctx context.Context, userID, name string) (int, string
     `, userID, name).Scan(&id, &typeName)
 
 	if err != nil {
-		logger.Warn(ctx, "類別不存在", "name", name, "error", err.Error())
+		logger.Warn(ctx, "Category does not exist", "name", name, "error", err.Error())
 		return 0, "", err
 	}
 
-	logger.Info(ctx, "取得類別成功", "id", id, "type", typeName)
+	logger.Info(ctx, "Category fetched", "id", id, "type", typeName)
 	return id, typeName, nil
 }
 
-// GetCategoriesInfo 獲取用戶的所有類別資訊，返回 map[類別名稱]類型
+// GetCategoriesInfo gets all category info for a user, returns map[category_name]type
 func GetCategoriesInfo(ctx context.Context, userID string) (map[string]string, error) {
 	ctx, span := logger.StartSpan(ctx, "models.GetCategoriesInfo")
 	defer span.End()
 
-	logger.Info(ctx, "獲取類別資訊", "user_id", userID)
+	logger.Info(ctx, "Get categories info", "user_id", userID)
 
 	rows, err := db.QueryContext(ctx, `
         SELECT name, type FROM categories WHERE user_id = $1
     `, userID)
 	if err != nil {
-		logger.Error(ctx, "獲取類別資訊失敗", "error", err.Error())
+		logger.Error(ctx, "Failed to get categories info", "error", err.Error())
 		return nil, err
 	}
 	defer rows.Close()
@@ -180,12 +180,12 @@ func GetCategoriesInfo(ctx context.Context, userID string) (map[string]string, e
 	for rows.Next() {
 		var name, typeName string
 		if err := rows.Scan(&name, &typeName); err != nil {
-			logger.Error(ctx, "解析類別資訊失敗", "error", err.Error())
+			logger.Error(ctx, "Failed to parse category info", "error", err.Error())
 			return nil, err
 		}
 		categoriesInfo[name] = typeName
 	}
 
-	logger.Info(ctx, "類別資訊獲取成功", "count", len(categoriesInfo))
+	logger.Info(ctx, "Categories info fetched", "count", len(categoriesInfo))
 	return categoriesInfo, nil
 }

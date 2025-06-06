@@ -6,21 +6,17 @@ services:
     restart: always
     ports:
       - "8080:8080"
-    environment:
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/line_accounting_db
-      - PORT=8080
-      - CHANNEL_SECRET=你的LINE_CHANNEL_SECRET
-      - CHANNEL_TOKEN=你的LINE_CHANNEL_TOKEN
+    env_file:
+      - .env
     depends_on:
       - db
+      - jaeger
 
   db:
     image: postgres:14
     restart: always
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=line_accounting_db
+    env_file:
+      - .env
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -28,22 +24,13 @@ services:
 
   jaeger:
     image: jaegertracing/all-in-one:latest
+    restart: always
     ports:
-      - "16686:16686"  # Jaeger UI
-      - "4317:4317"    # OTLP gRPC
-      - "4318:4318"    # OTLP HTTP
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
     environment:
       - COLLECTOR_OTLP_ENABLED=true
-
-  accounting-bot:
-    build: .
-    ports:
-      - "8080:8080"
-    environment:
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
-      - ENVIRONMENT=development
-    depends_on:
-      - jaeger
 
 volumes:
   postgres_data:

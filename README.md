@@ -1,13 +1,38 @@
 # Go Line Accounting Bot
 
-一個簡單的記帳機器人服務，支援使用者新增收入與支出類別，並能快速記帳。
+A simple accounting bot service built with Go, supporting category management and fast expense/income recording for users.
 
-## 使用說明
-- 新增類別：`新增類別 支出 早餐`
-- 快速記帳：`早餐 150`
+## Features
 
-## 開發與啟動
+- Add income or expense categories
+- Quick record of transactions
+- Monthly summary reports
+- LINE Bot integration
+
+## Usage
+
+- Add a category: `新增類別 支出 早餐`
+- Quick record: `早餐 150`
+- View all categories: `已設定類別`
+- Monthly summary: `結算` or `結算 2025年 5月`
+- Help: `指令大全`
+
+## Development & Startup
+
 ```bash
 go mod tidy
 go run main.go
 ```
+
+## Environment Variables
+
+- Configure your database and LINE Bot credentials in `config.yaml` or via environment variables as needed.
+
+## API Endpoints
+
+- `/callback` : LINE webhook endpoint
+- `/health`   : Health check endpoint
+
+## License
+
+MIT
